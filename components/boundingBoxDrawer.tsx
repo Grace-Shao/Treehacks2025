@@ -29,11 +29,18 @@ const BoundingBoxDrawer = ({ imageUrl, boxes }) => {
         canvas.height = height;
         ctx.drawImage(image, 0, 0, width, height);
 
+        // Define a list of colors
+        const colors = [
+            'red', 'green', 'blue', 'yellow', 'orange', 'pink', 'purple', 'brown', 'gray', 'beige',
+            'turquoise', 'cyan', 'magenta', 'lime', 'navy', 'maroon', 'teal', 'olive', 'coral', 'lavender',
+            'violet', 'gold', 'silver'
+          ];
+
         // Scale the bounding boxes to match the resized image
         const xScale = width / image.width;
         const yScale = height / image.height;
 
-        boxes.forEach((box) => {
+        boxes.forEach((box, i) => {
           // Convert normalized coordinates to absolute coordinates
           let [y1, x1, y2, x2] = box.box_2d;
           y1 = (y1 / 1000) * height;
@@ -45,13 +52,15 @@ const BoundingBoxDrawer = ({ imageUrl, boxes }) => {
           if (x1 > x2) [x1, x2] = [x2, x1];
           if (y1 > y2) [y1, y2] = [y2, y1];
 
+          const color = colors[i % colors.length];
+
           ctx.beginPath();
           ctx.rect(x1, y1, x2 - x1, y2 - y1);
           ctx.lineWidth = 2;
-          ctx.strokeStyle = 'red';
+          ctx.strokeStyle = color;
           ctx.stroke();
           ctx.font = '12px Arial';
-          ctx.fillStyle = 'red';
+          ctx.fillStyle = color;
           ctx.fillText(box.label, x1 + 8, y1 + 6);
         });
       }
