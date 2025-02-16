@@ -47,12 +47,11 @@ export default function Page() {
           setTranscript(prev => prev + ' ' + finalTranscript)
         }
       }
-
-      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-        // commenting out as errors from no audio
-        // console.error('Speech recognition error:', event.error)
-        setError('Speech recognition error: ' + event.error)
-      }
+      //  commenting out as errors from no audio
+      // recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      //   console.error('Speech recognition error:', event.error)
+      //   setError('Speech recognition error: ' + event.error)
+      // }
 
       recognitionRef.current = recognition
     } else {
@@ -288,34 +287,18 @@ export default function Page() {
               )}
 
               <div className="mt-4 space-y-2">
-                <h2 className="text-xl font-semibold text-white">Detected Events</h2>
                 {timestamps.length > 0 ? (
-                  <div className="space-y-2">
-                    {timestamps.map((event, index) => (
-                      <div 
-                        key={index}
-                        className={`p-3 rounded-lg ${event.isDangerous 
-                          ? 'bg-red-900/50 border border-red-500 animate-pulse' 
-                          : 'bg-zinc-800/50'}`}
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="flex items-center gap-2">
-                            {event.isDangerous && (
-                              <div className="w-2 h-2 rounded-full bg-red-500" />
-                            )}
-                            <span className="text-zinc-400 font-mono">{event.timestamp}</span>
-                          </div>
-                          <p className={`${event.isDangerous ? 'text-red-200' : 'text-zinc-200'}`}>
-                            {event.description}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <TimestampList 
+                    timestamps={timestamps} 
+                    onTimestampClick={() => {}} // No action needed for realtime stream
+                  />
                 ) : (
-                  <p className="text-zinc-400 text-sm">
-                    {isRecording ? 'Waiting for events...' : 'Start analysis to detect events'}
-                  </p>
+                  <div className="space-y-2">
+                    <h2 className="text-xl font-semibold text-white">Key Moments</h2>
+                    <p className="text-zinc-400 text-sm">
+                      {isRecording ? 'Waiting for events...' : 'Start analysis to detect events'}
+                    </p>
+                  </div>
                 )}
               </div>
 
