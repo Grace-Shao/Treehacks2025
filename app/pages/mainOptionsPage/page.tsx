@@ -16,10 +16,10 @@ export default function HomePage() {
                 Analyze Video
               </button>
             </Link>
-            <Link href="/pages/realtime-stream" className="block w-full">
+            <Link href="/pages/realtimeStreamPage" className="block w-full">
               <button className="w-full bg-white text-black font-semibold py-3 px-6 rounded-lg hover:bg-gray-200 transition-colors duration-300 flex items-center justify-center">
                 <PlaySquare className="mr-2 h-5 w-5" />
-                Realtime Streaming
+                Real-time Stream Analysis
               </button>
             </Link>
             <Link href="/pages/saved-videos" className="block w-full">
