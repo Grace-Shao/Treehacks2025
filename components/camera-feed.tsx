@@ -48,11 +48,6 @@ export function CameraFeed({ camera, date = new Date(), onTimeUpdate }: CameraFe
           <Wifi className="h-4 w-4" />
           <Battery className="h-4 w-4" />
         </div>
-        {camera.motionLevel && (
-          <div className="flex h-6 items-center rounded-full bg-white/20 px-2 text-sm text-white backdrop-blur-sm">
-            {camera.motionLevel}
-          </div>
-        )}
         <div className="rounded-full bg-white/20 p-1.5 backdrop-blur-sm">
           <MoreHorizontal className="h-4 w-4 text-green-400" />
         </div>

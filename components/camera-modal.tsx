@@ -73,12 +73,6 @@ export function CameraModal({
               <div className="flex items-center gap-4 font-mono text-green-500">
                 <Signal className="h-5 w-5" />
                 <Battery className="h-5 w-5" />
-                {camera.motionLevel && (
-                  <div className="flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-sm backdrop-blur-sm">
-                    <span className="h-2 w-2 rounded-full bg-green-500"></span>
-                    <span>{camera.motionLevel}</span>
-                  </div>
-                )}
               </div>
 
               {/* Right: Incident Alert */}
