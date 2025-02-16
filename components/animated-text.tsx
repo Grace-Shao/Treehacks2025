@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 
-const phrases = ["Detect shoplifting", "Real-time analytics", "Protect your brand"]
+const phrases = ["Prevent dangerous activity", "Real-time analytics", "Receive instant alerts"]
 
 export default function AnimatedText() {
   const [text, setText] = useState("")
