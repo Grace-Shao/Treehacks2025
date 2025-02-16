@@ -112,7 +112,9 @@ export default function Page() {
   const analyzeFrame = async () => {
     const currentTranscript = transcript.trim()
     console.log('Analyzing frame...')
-    if (!isRecordingRef.current) {
+    // Store recording state at the start of analysis
+    const wasRecording = isRecordingRef.current
+    if (!wasRecording) {
       console.log('Not recording, skipping analysis')
       return
     }
@@ -124,6 +126,12 @@ export default function Page() {
         // Include transcript in the analysis
         const result = await detectEvents(frame, currentTranscript)
         console.log('API response:', result)
+
+        // Check if we're still recording after API call
+        if (!isRecordingRef.current) {
+          console.log('Recording stopped during analysis, discarding results')
+          return
+        }
 
         if (result.events && result.events.length > 0) {
           console.log('Events detected:', result.events)
@@ -149,7 +157,9 @@ export default function Page() {
     } catch (error) {
       console.error('Error analyzing frame:', error)
       setError('Error analyzing frame. Please try again.')
-      stopRecording()
+      if (isRecordingRef.current) {
+        stopRecording()
+      }
     }
   }
 
