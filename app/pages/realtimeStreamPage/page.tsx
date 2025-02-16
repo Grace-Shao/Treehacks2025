@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import TimestampList from "@/components/timestamp-list"
+import ChatInterface from "@/components/chat-interface"
 import type { Timestamp } from "@/app/types"
 import { detectEvents, type VideoEvent } from "./actions"
 
@@ -813,6 +814,7 @@ export default function Page() {
             </div>
           </div>
         </div>
+        <ChatInterface timestamps={timestamps} />
       </div>
     </div>
   )
