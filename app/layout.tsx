@@ -9,6 +9,18 @@ import HomeLink from "@/components/home-link";
 import { HeaderNav } from "@/components/header-nav";
 import { GeminiFooter } from "@/components/gemini-footer";
 import "./globals.css";
+import "nprogress/nprogress.css";
+import { NavigationEvents } from "@/components/navigation-events";
+import NProgress from "nprogress";
+
+// Configure NProgress
+NProgress.configure({
+  showSpinner: false,
+  trickleSpeed: 50,
+  minimum: 0.4,
+  easing: 'ease-out',
+  speed: 20
+});
 
 const defaultUrl = process.env.VERCEL_URL
 	? `https://${process.env.VERCEL_URL}`
@@ -33,6 +45,7 @@ export default function RootLayout({
 	return (
 		<html lang="en" className={geistSans.className} suppressHydrationWarning>
 			<body className="bg-background text-foreground" suppressHydrationWarning>
+				<NavigationEvents />
 				<ThemeProvider
 					attribute="class"
 					defaultTheme="system"
