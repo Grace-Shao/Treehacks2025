@@ -5,7 +5,6 @@ export interface Camera {
   address: string
   thumbnail: string
   videoUrl?: string
-  motionLevel?: number
 }
 
 export interface Location {
