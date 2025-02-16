@@ -9,7 +9,7 @@ import {
   getSortedRowModel,
 } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
-import { ArrowUpDown } from "lucide-react"
+import { ArrowUpDown, Download } from "lucide-react"
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -46,6 +46,31 @@ interface KeyMoment {
 }
 
 export default function StatisticsPage() {
+  const exportToCSV = () => {
+    // Convert keyMoments to CSV format
+    const csvContent = [
+      // Header row
+      ['Video Name', 'Timestamp', 'Description', 'Is Dangerous'].join(','),
+      // Data rows
+      ...keyMoments.map(moment => [
+        moment.videoName,
+        moment.timestamp,
+        `"${moment.description}"`, // Wrap description in quotes to handle commas
+        moment.isDangerous
+      ].join(','))
+    ].join('\n')
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `safety-statistics-${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
   const [keyMoments, setKeyMoments] = useState<KeyMoment[]>([])
   const [chartData, setChartData] = useState<{
     dangerousMomentsByVideo: any;
@@ -305,7 +330,17 @@ export default function StatisticsPage() {
             )}
           </div>
         </div>
-        <h1 className="text-3xl font-bold">Video Key Moments</h1>
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">Video Key Moments</h1>
+          <Button
+            onClick={exportToCSV}
+            variant="outline"
+            className="gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Export CSV
+          </Button>
+        </div>
         
         <div className="rounded-md border">
           <table className="w-full">
