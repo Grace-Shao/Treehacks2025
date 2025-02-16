@@ -13,13 +13,13 @@ import "nprogress/nprogress.css";
 import { NavigationEvents } from "@/components/navigation-events";
 import NProgress from "nprogress";
 
-// Configure NProgress
+// Configure NProgress to complete instantly
 NProgress.configure({
   showSpinner: false,
-  trickleSpeed: 50,
-  minimum: 0.4,
-  easing: 'linear',
-  speed: 10
+  trickleSpeed: 1,
+  minimum: 0.99,
+  easing: 'ease',
+  speed: 1
 });
 
 const defaultUrl = process.env.VERCEL_URL

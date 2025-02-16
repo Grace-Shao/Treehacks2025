@@ -9,18 +9,14 @@ export function NavigationEvents() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    // Start progress immediately
+    // Start and complete progress immediately
     NProgress.start();
-    NProgress.set(0.4);
-
-    // Schedule the completion after exactly 0.5 seconds
+    NProgress.set(1);
+    
+    // Remove after a tiny delay
     const timer = setTimeout(() => {
-      NProgress.set(1);
-      // Remove after showing 100%
-      setTimeout(() => {
-        NProgress.remove();
-      }, 10);
-    }, 500);
+      NProgress.remove();
+    }, 10);
 
     return () => {
       clearTimeout(timer);
