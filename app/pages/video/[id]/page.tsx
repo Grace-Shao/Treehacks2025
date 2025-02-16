@@ -56,17 +56,33 @@ export default function VideoPage() {
           <VideoPlayer url={video.url} timestamps={video.timestamps} ref={videoRef} />
           <div className="flex justify-end mt-4">
             <Button
-              onClick={() => {
-                const a = document.createElement('a')
-                a.href = video.url
-                // Remove .mp4 extension if it exists in the name
-                const filename = video.name.toLowerCase().endsWith('.mp4') 
-                  ? video.name 
-                  : `${video.name}.mp4`
-                a.download = filename
-                document.body.appendChild(a)
-                a.click()
-                document.body.removeChild(a)
+              onClick={async () => {
+                try {
+                  const response = await fetch(video.url)
+                  const videoBlob = await response.blob()
+                  
+                  const blob = new Blob([videoBlob], { type: 'video/mp4' })
+                  const blobUrl = URL.createObjectURL(blob)
+                  
+                  const a = document.createElement('a')
+                  a.href = blobUrl
+                  const downloadName = video.name.toLowerCase().endsWith('.mp4')
+                    ? video.name
+                    : `${video.name}.mp4`
+                  a.download = downloadName
+                  a.setAttribute('type', 'video/mp4')
+                  a.setAttribute('extension', 'mp4')
+                  
+                  // download
+                  document.body.appendChild(a)
+                  a.click()
+                  
+                  document.body.removeChild(a)
+                  URL.revokeObjectURL(blobUrl)
+                } catch (error) {
+                  console.error('Download error:', error)
+                  alert('Failed to download video. Please try again.')
+                }
               }}
               className="bg-white/10 hover:bg-white/20 text-white border border-white/20 flex items-center gap-2 backdrop-blur-sm transition-colors"
             >
