@@ -156,16 +156,6 @@ export default function UploadPage() {
 
       console.log('Analysis complete, found timestamps:', newTimestamps)
       setTimestamps(newTimestamps)
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-
-      const mockTimestamps: Timestamp[] = [
-        { timestamp: "00:05", description: "Introduction begins" },
-        { timestamp: "00:15", description: "Main topic presented" },
-        { timestamp: "00:30", description: "First key point discussed" },
-        { timestamp: "00:45", description: "Example provided" },
-        { timestamp: "01:00", description: "Conclusion and summary" },
-      ]
-      setTimestamps(mockTimestamps)
       setIsAnalyzing(false)
       setUploadProgress(100)
     } catch (error) {
