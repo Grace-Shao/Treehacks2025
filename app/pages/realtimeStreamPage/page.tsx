@@ -165,13 +165,53 @@ export default function Page() {
 
         if (result.events && result.events.length > 0) {
           console.log('Events detected:', result.events)
-          result.events.forEach((event: VideoEvent) => {
+          result.events.forEach(async (event: VideoEvent) => {
             const newTimestamp = {
               timestamp: getElapsedTime(),
               description: event.description,
               isDangerous: event.isDangerous
             }
             console.log('Adding new timestamp:', newTimestamp)
+            
+            // Send email notification for dangerous events
+            if (event.isDangerous) {
+              try {
+                console.log('Dangerous event detected, preparing to send email...')
+                const emailPayload = {
+                  title: 'Dangerous Activity Detected',
+                  description: `At ${newTimestamp.timestamp}, the following dangerous activity was detected: ${event.description}`
+                }
+                console.log('Email payload:', emailPayload)
+                
+                const response = await fetch('/api/send-email', {
+                  method: 'POST',
+                  headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                  },
+                  body: JSON.stringify(emailPayload)
+                })
+                console.log('Fetch response status:', response.status)
+                
+                const result = await response.json()
+                
+                if (!response.ok) {
+                  console.error('Failed to send email notification:', result.error)
+                  if (response.status === 401) {
+                    setError('Please sign in to receive email notifications for dangerous events.')
+                  } else if (response.status === 500) {
+                    setError('Email service not properly configured. Please contact support.')
+                  } else {
+                    setError(`Failed to send email notification: ${result.error?.message || 'Unknown error'}`)
+                  }
+                } else {
+                  console.log('Email notification sent successfully')
+                }
+              } catch (error) {
+                console.error('Error sending email notification:', error)
+              }
+            }
+            
             setTimestamps(prev => {
               const updated = [...prev, newTimestamp]
               console.log('Updated timestamps:', updated)
