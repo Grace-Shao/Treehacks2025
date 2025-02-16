@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Download } from "lucide-react"
 import VideoPlayer from "@/components/video-player"
 import TimestampList from "@/components/timestamp-list"
 import type { Timestamp } from "@/app/types"
@@ -52,6 +54,26 @@ export default function VideoPage() {
         </h1>
         <div className="space-y-4">
           <VideoPlayer url={video.url} timestamps={video.timestamps} ref={videoRef} />
+          <div className="flex justify-end mt-4">
+            <Button
+              onClick={() => {
+                const a = document.createElement('a')
+                a.href = video.url
+                // Remove .mp4 extension if it exists in the name
+                const filename = video.name.toLowerCase().endsWith('.mp4') 
+                  ? video.name 
+                  : `${video.name}.mp4`
+                a.download = filename
+                document.body.appendChild(a)
+                a.click()
+                document.body.removeChild(a)
+              }}
+              className="bg-white/10 hover:bg-white/20 text-white border border-white/20 flex items-center gap-2 backdrop-blur-sm transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              Download MP4
+            </Button>
+          </div>
           <TimestampList timestamps={video.timestamps} onTimestampClick={handleTimestampClick} />
         </div>
         <div className="mt-8 text-center">
