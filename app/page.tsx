@@ -12,7 +12,7 @@ export default async function Home() {
       <div className="absolute inset-0 bg-radial-gradient"></div>
       <ParticleBackground />
       <div className="z-10 text-center space-y-4">
-        <h1 className="text-6xl font-bold mb-2 text-white glow-text">Hawk Watch</h1>
+        <h1 className="text-6xl font-bold mb-2 text-white glow-text">HawkWatch</h1>
         <AnimatedText />
         <Link
           href="/sign-in"
