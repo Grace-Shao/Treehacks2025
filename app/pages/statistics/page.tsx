@@ -114,9 +114,13 @@ export default function StatisticsPage() {
           throw new Error(data.error)
         }
         setSummary(data.summary)
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching summary:', error)
-        setSummary('Unable to generate summary at this time.')
+        const errorMessage = error?.message || 'Unable to generate summary at this time.'
+        setSummary(`Error: ${errorMessage}`)
+        if (error?.details) {
+          console.error('Error details:', error.details)
+        }
       } finally {
         setIsLoadingSummary(false)
       }

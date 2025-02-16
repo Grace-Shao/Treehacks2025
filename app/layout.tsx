@@ -18,8 +18,8 @@ NProgress.configure({
   showSpinner: false,
   trickleSpeed: 50,
   minimum: 0.4,
-  easing: 'ease-out',
-  speed: 20
+  easing: 'linear',
+  speed: 10
 });
 
 const defaultUrl = process.env.VERCEL_URL

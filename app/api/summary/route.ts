@@ -48,10 +48,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ 
       summary: response.choices[0]?.message?.content || 'Unable to generate summary.' 
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error generating summary:', error)
+    const errorMessage = error.message || 'Failed to generate summary'
     return NextResponse.json(
-      { error: 'Failed to generate summary' },
+      { 
+        error: errorMessage,
+        details: error instanceof Error ? error.message : 'Unknown error occurred'
+      },
       { status: 500 }
     )
   }
