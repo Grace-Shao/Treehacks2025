@@ -1,13 +1,13 @@
 import DeployButton from "@/components/deploy-button";
 import { EnvVarWarning } from "@/components/env-var-warning";
 import HeaderAuth from "@/components/header-auth";
-import { ThemeSwitcher } from "@/components/theme-switcher";
 import { hasEnvVars } from "@/utils/supabase/check-env-vars";
 import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import Link from "next/link";
 import HomeLink from "@/components/home-link";
 import { HeaderNav } from "@/components/header-nav";
+import { GeminiFooter } from "@/components/gemini-footer";
 import "./globals.css";
 
 const defaultUrl = process.env.VERCEL_URL
@@ -53,9 +53,8 @@ export default function RootLayout({
 							<div className="w-full">
 								{children}
 							</div>
-							<footer className="w-full border-t border-t-foreground/10 p-8 flex justify-center text-center text-xs">
-								<p>TreeHacks 2025</p>
-								<ThemeSwitcher />
+							<footer className="w-full border-t border-t-foreground/10 p-8 flex justify-center">
+								<GeminiFooter />
 							</footer>
 						</div>
 					</main>
