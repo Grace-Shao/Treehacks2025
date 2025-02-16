@@ -59,7 +59,7 @@ export default function UploadPage() {
     return canvas.toDataURL('image/jpeg', 0.8);
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: { target: { files: FileList | null } }) => {
     const file = e.target.files?.[0]
     if (!file) return
 
@@ -209,6 +209,32 @@ export default function UploadPage() {
                   <label
                     htmlFor="video-upload"
                     className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer border-zinc-700 hover:bg-zinc-800/50 transition-colors"
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      e.currentTarget.classList.add('border-purple-500');
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      e.currentTarget.classList.remove('border-purple-500');
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      e.currentTarget.classList.remove('border-purple-500');
+                      
+                      const file = e.dataTransfer.files[0];
+                      if (file && file.type.startsWith('video/')) {
+                        const input = document.getElementById('video-upload') as HTMLInputElement;
+                        if (input) {
+                          const dataTransfer = new DataTransfer();
+                          dataTransfer.items.add(file);
+                          input.files = dataTransfer.files;
+                          handleFileUpload({ target: { files: dataTransfer.files } } as any);
+                        }
+                      }
+                    }}
                   >
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
                       <Upload className="h-8 w-8 mb-2 text-zinc-400" />
