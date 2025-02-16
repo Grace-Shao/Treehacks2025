@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
-import { Camera, StopCircle, PlayCircle, Save } from "lucide-react"
+import { Camera, StopCircle, PlayCircle, Save, Loader2 } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,9 +11,13 @@ import type { Timestamp } from "@/app/types"
 import { detectEvents, type VideoEvent } from "./actions"
 
 // Dynamically import TensorFlow.js and models
-let tf: typeof import('@tensorflow/tfjs')
-let blazeface: typeof import('@tensorflow-models/blazeface')
-let poseDetection: typeof import('@tensorflow-models/pose-detection')
+import type * as blazeface from '@tensorflow-models/blazeface'
+import type * as posedetection from '@tensorflow-models/pose-detection'
+import type * as tf from '@tensorflow/tfjs'
+
+let tfjs: typeof tf
+let blazefaceModel: typeof blazeface
+let poseDetection: typeof posedetection
 
 interface SavedVideo {
   id: string
@@ -23,18 +27,34 @@ interface SavedVideo {
   timestamps: Timestamp[]
 }
 
+interface Keypoint {
+  x: number
+  y: number
+  score?: number
+  name?: string
+}
+
+interface FacePrediction {
+  topLeft: [number, number] | tf.Tensor1D
+  bottomRight: [number, number] | tf.Tensor1D
+  landmarks?: Array<[number, number]> | tf.Tensor2D
+  probability: number | tf.Tensor1D
+}
+
 export default function Page() {
   // States
   const [isRecording, setIsRecording] = useState(false)
   const [timestamps, setTimestamps] = useState<Timestamp[]>([])
   const [analysisProgress, setAnalysisProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
+  const [isInitializing, setIsInitializing] = useState(true)
+  const [initializationProgress, setInitializationProgress] = useState<string>('')
   const [transcript, setTranscript] = useState('')
   const [isTranscribing, setIsTranscribing] = useState(false)
   const [videoName, setVideoName] = useState('')
   const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null)
   const [mlModelsReady, setMlModelsReady] = useState(false)
-  const [lastPoseKeypoints, setLastPoseKeypoints] = useState<any[]>([])
+  const [lastPoseKeypoints, setLastPoseKeypoints] = useState<Keypoint[]>([])
   const [isClient, setIsClient] = useState(false)
 
   // Refs
@@ -47,7 +67,7 @@ export default function Page() {
   const lastFrameTimeRef = useRef<number>(performance.now())
   const startTimeRef = useRef<Date | null>(null)
   const faceModelRef = useRef<blazeface.BlazeFaceModel | null>(null)
-  const poseModelRef = useRef<poseDetection.PoseDetector | null>(null)
+  const poseModelRef = useRef<posedetection.PoseDetector | null>(null)
   const recognitionRef = useRef<SpeechRecognition | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const recordedChunksRef = useRef<Blob[]>([])
@@ -58,33 +78,63 @@ export default function Page() {
   // -----------------------------
   const initMLModels = async () => {
     try {
+      setIsInitializing(true)
       setMlModelsReady(false)
       setError(null)
 
-      // Dynamically import TensorFlow.js and models
-      tf = await import('@tensorflow/tfjs')
-      blazeface = await import('@tensorflow-models/blazeface')
-      poseDetection = await import('@tensorflow-models/pose-detection')
+      // Start loading TensorFlow.js in parallel with other initialization
+      setInitializationProgress('Loading TensorFlow.js...')
+      const tfPromise = import('@tensorflow/tfjs').then(async (tf) => {
+        tfjs = tf
+        // Configure TF.js for better performance
+        await tf.ready()
+        await tf.setBackend('webgl')
+        await tf.env().set('WEBGL_FORCE_F16_TEXTURES', true) // Use F16 textures for better performance
+        await tf.env().set('WEBGL_PACK', true) // Enable texture packing
+        await tf.env().set('WEBGL_CHECK_NUMERICAL_PROBLEMS', false) // Disable numerical checks in production
+      })
 
-      // Set TF backend
-      await tf.setBackend('webgl')
-      await tf.ready()
+      // Load models in parallel
+      setInitializationProgress('Loading face and pose detection models...')
+      const [blazefaceModule, poseDetectionModule] = await Promise.all([
+        import('@tensorflow-models/blazeface'),
+        import('@tensorflow-models/pose-detection')
+      ])
 
-      // Load face detection model
-      faceModelRef.current = await blazeface.load()
+      blazefaceModel = blazefaceModule
+      poseDetection = poseDetectionModule
 
-      // Load pose detection model (MoveNet)
-      poseModelRef.current = await poseDetection.createDetector(
-        poseDetection.SupportedModels.MoveNet,
-        { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING }
-      )
+      // Wait for TF.js to be ready
+      await tfPromise
+
+      // Load models in parallel
+      setInitializationProgress('Initializing models...')
+      const [faceModel, poseModel] = await Promise.all([
+        blazefaceModel.load({
+          maxFaces: 1, // Limit to 1 face for better performance
+          scoreThreshold: 0.5 // Increase threshold for better performance
+        }),
+        poseDetection.createDetector(
+          poseDetection.SupportedModels.MoveNet,
+          {
+            modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
+            enableSmoothing: true,
+            minPoseScore: 0.3
+          }
+        )
+      ])
+
+      faceModelRef.current = faceModel
+      poseModelRef.current = poseModel
 
       setMlModelsReady(true)
+      setIsInitializing(false)
       console.log('All ML models loaded successfully')
     } catch (err) {
       console.error('Error loading ML models:', err)
       setError('Failed to load ML models: ' + (err as Error).message)
       setMlModelsReady(false)
+      setIsInitializing(false)
     }
   }
 
@@ -212,13 +262,13 @@ export default function Page() {
     if (faceModelRef.current) {
       try {
         const predictions = await faceModelRef.current.estimateFaces(video, false)
-        predictions.forEach((prediction) => {
+        predictions.forEach((prediction: blazeface.NormalizedFace) => {
           const start = prediction.topLeft as [number, number]
           const end = prediction.bottomRight as [number, number]
           const size = [end[0] - start[0], end[1] - start[1]]
 
           const scaledStart = [start[0] * scaleX, start[1] * scaleY]
-          const scaledSize = [size[0] * scaleX, size[1] * scaleY]
+          const scaledSize = [size[0] * scaleX, size[1] * scaleX]
 
           // Draw bounding box
           ctx.strokeStyle = "rgba(0, 255, 0, 0.8)"
@@ -247,10 +297,18 @@ export default function Page() {
         const poses = await poseModelRef.current.estimatePoses(video)
         if (poses.length > 0) {
           const keypoints = poses[0].keypoints
-          setLastPoseKeypoints(keypoints)
+          // Convert TF keypoints to our Keypoint type
+          const convertedKeypoints: Keypoint[] = keypoints.map(kp => ({
+            x: kp.x,
+            y: kp.y,
+            score: kp.score ?? 0, // Use 0 as default if score is undefined
+            name: kp.name
+          }))
+          setLastPoseKeypoints(convertedKeypoints)
 
           keypoints.forEach((keypoint) => {
-            if (keypoint.score > 0.3) {
+            // Use nullish coalescing to provide a default value of 0
+            if ((keypoint.score ?? 0) > 0.3) {
               const x = keypoint.x * scaleX
               const y = keypoint.y * scaleY
 
@@ -268,7 +326,8 @@ export default function Page() {
               ctx.stroke()
 
               // Label (if available)
-              if (keypoint.score > 0.5 && keypoint.name) {
+              // Use nullish coalescing to provide a default value of 0
+              if ((keypoint.score ?? 0) > 0.5 && keypoint.name) {
                 ctx.fillStyle = "white"
                 ctx.font = "12px Arial"
                 ctx.fillText(`${keypoint.name}`, x + 8, y)
@@ -606,6 +665,12 @@ export default function Page() {
 
             <div className="space-y-4">
               <div className="relative aspect-video rounded-lg overflow-hidden bg-zinc-900">
+                {isInitializing && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900/90 z-20">
+                    <Loader2 className="w-8 h-8 animate-spin text-purple-500 mb-2" />
+                    <p className="text-zinc-300">{initializationProgress}</p>
+                  </div>
+                )}
                 <div className="relative w-full h-full" style={{ aspectRatio: "16/9" }}>
                   {isClient && (
                     <video
@@ -627,14 +692,22 @@ export default function Page() {
                 </div>
               </div>
 
-              {error && (
+              {error && !isInitializing && (
                 <div className="p-4 bg-red-900/50 border border-red-500 rounded-lg text-red-200">
                   {error}
                 </div>
               )}
 
               <div className="flex justify-center gap-4">
-                {!isRecording ? (
+                {isInitializing ? (
+                  <button
+                    disabled
+                    className="flex items-center gap-2 px-4 py-2 bg-zinc-600 rounded-lg transition-colors cursor-not-allowed"
+                  >
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Initializing...
+                  </button>
+                ) : !isRecording ? (
                   <button
                     onClick={startRecording}
                     className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
