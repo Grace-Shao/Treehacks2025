@@ -63,6 +63,11 @@ export async function detectEvents(base64Image: string): Promise<{ events: Video
 - Threatening behavior
 - Weapons visible
 
+5. Suspicious Activities:
+- Shoplifting
+- Vandalism
+- Trespassing
+
 Return a JSON object in this exact format:
 
 {

@@ -63,6 +63,10 @@ export async function detectEvents(base64Image: string, transcript: string = '')
 - Threatening behavior
 - Weapons visible
 
+5. Suspicious Activities:
+- Shoplifting
+- Vandalism
+- Trespassing
 ${transcript ? `Consider this audio transcript from the scene: "${transcript}"
 ` : ''}
 Return a JSON object in this exact format:
