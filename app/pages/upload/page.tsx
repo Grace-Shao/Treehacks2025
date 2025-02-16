@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import VideoPlayer from "@/components/video-player"
 import TimestampList from "@/components/timestamp-list"
 import type { Timestamp } from "@/app/types"
+import { detectEvents } from "./actions"
 import Link from "next/link"
 
 interface SavedVideo {
@@ -30,35 +31,131 @@ export default function UploadPage() {
   const [videoName, setVideoName] = useState("")
   const videoRef = useRef<HTMLVideoElement>(null)
 
+  const captureFrame = async (video: HTMLVideoElement, time: number): Promise<string | null> => {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+
+    if (!context) {
+      console.error('Failed to get canvas context');
+      return null;
+    }
+
+    try {
+      video.currentTime = time;
+    } catch (error) {
+      console.error('Error setting video time:', error);
+      return null;
+    }
+    
+    // Wait for video to seek to the specified time
+    await new Promise((resolve) => {
+      video.onseeked = resolve;
+    });
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    return canvas.toDataURL('image/jpeg', 0.8);
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
     setIsUploading(true)
     setUploadProgress(0)
+    setTimestamps([])
 
     try {
-      const interval = setInterval(() => {
-        setUploadProgress((prev) => {
-          if (prev >= 95) {
-            clearInterval(interval)
-            return 95
-          }
-          return prev + 5
-        })
-      }, 100)
 
       const localUrl = URL.createObjectURL(file)
       setVideoUrl(localUrl)
       setVideoName(file.name)
 
+      // Wait for video element to be available
+      while (!videoRef.current) {
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+
+      // Set the source and wait for video to load
+      const video = videoRef.current
+      video.src = localUrl
+
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Timeout waiting for video metadata'))
+        }, 10000)
+
+        const handleLoad = () => {
+          clearTimeout(timeout)
+          resolve(true)
+        }
+
+        const handleError = () => {
+          clearTimeout(timeout)
+          reject(new Error('Failed to load video: ' + video.error?.message))
+        }
+
+        video.addEventListener('loadeddata', handleLoad)
+        video.addEventListener('error', handleError)
+
+        if (video.readyState >= 2) {
+          handleLoad()
+        }
+
+        return () => {
+          video.removeEventListener('loadeddata', handleLoad)
+          video.removeEventListener('error', handleError)
+        }
+      })
       await new Promise((resolve) => setTimeout(resolve, 2000))
 
       setIsUploading(false)
       setUploadProgress(100)
-      clearInterval(interval)
 
+      // Start analysis
       setIsAnalyzing(true)
+      const duration = video.duration
+      
+      if (!duration || duration === Infinity || isNaN(duration)) {
+        throw new Error('Invalid video duration')
+      }
+
+      console.log('Video duration:', duration)
+      const interval = 3 // Analyze one frame every 3 seconds
+      const totalFrames = Math.floor(duration / interval)
+      const newTimestamps: Timestamp[] = []
+
+      // Process frames at regular intervals
+      for (let time = 0; time < duration; time += interval) {
+        const progress = Math.floor((time / duration) * 100)
+        setUploadProgress(progress)
+        console.log(`Analyzing frame at ${time}s (${progress}%)...`)
+
+        const frame = await captureFrame(video, time)
+        if (frame) {
+          try {
+            const result = await detectEvents(frame)
+            console.log('Frame analysis result:', result)
+            if (result.events && result.events.length > 0) {
+              result.events.forEach(event => {
+                const minutes = Math.floor(time / 60)
+                const seconds = Math.floor(time % 60)
+                newTimestamps.push({
+                  timestamp: `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`,
+                  description: event.description
+                })
+              })
+            }
+          } catch (error) {
+            console.error('Error analyzing frame:', error)
+          }
+        }
+      }
+
+      console.log('Analysis complete, found timestamps:', newTimestamps)
+      setTimestamps(newTimestamps)
       await new Promise((resolve) => setTimeout(resolve, 2000))
 
       const mockTimestamps: Timestamp[] = [
@@ -70,6 +167,7 @@ export default function UploadPage() {
       ]
       setTimestamps(mockTimestamps)
       setIsAnalyzing(false)
+      setUploadProgress(100)
     } catch (error) {
       console.error("Error uploading/analyzing video:", error)
       setIsUploading(false)
