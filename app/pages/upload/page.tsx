@@ -144,7 +144,8 @@ export default function UploadPage() {
                 const seconds = Math.floor(time % 60)
                 newTimestamps.push({
                   timestamp: `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`,
-                  description: event.description
+                  description: event.description,
+                  isDangerous: event.isDangerous
                 })
               })
             }
@@ -268,4 +269,3 @@ export default function UploadPage() {
     </div>
   )
 }
-
