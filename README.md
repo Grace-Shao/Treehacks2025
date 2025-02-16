@@ -14,16 +14,18 @@ HawkWatch is an intelligent video surveillance platform that detects crime, susp
 ### Additional features
 * Sends instant alerts to security through email/phone notifications
 * Provides an intuitive dashboard for monitoring multiple cameras
+* Offers an OpenAI powered assistant that provides contextual support. The bot is fed real-time information about the ongoing event and can respond to user queries, such as "What should I do in this situation" if someone has passed out, helping with quick context-aware advice
 * Offers both real-time streaming and uploaded video analysis
 * Statistics page which offers an AI summary, chart analysis, and the option to export to CSV.
 
 ## How we built it
 Our tech stack combines modern tools for a robust, scalable solution:
-* **Frontend**: Next.js 13+ with TypeScript and Tailwind CSS for a responsive UI
-* **Backend**: Supabase for authentication and database management
-* **AI Processing**: TensorFlow.js GlazeFace model for real-time video analysis
-* **Email/Phone Service**: Resend API for reliable phone notification alerts
-* **Real-time Updates**: Canvas API
+* **Frontend**: The UI is built with Next.js 13+ and TypeScript, paired with Tailwind CSS for a sleek, responsive design. This ensures a seamless experience for users across different devices.
+* **Backend**: We use Supabase for secure user authentication and database management, allowing for easy access control and efficient data handling.
+* **AI Processing**: HawkWatch uses Google's Gemini Visual Language Model (VLM) for real-time video analysis and TensorFlow.js for processing video streams on the client side. These models enable accurate event detection, ranging from criminal activity to health-related emergencies.
+* **Email/Phone Service**: Resend API powers our email and phone notification system, ensuring that alerts are sent in real-time with minimal delays.
+* **Real-time Updates**: We leverage the Canvas API for live updates, ensuring that HawkWatch’s real-time analysis is fast and accurate, even as it processes multiple video streams.
+* **Contextual Assistance**: OpenAI’s language models are integrated to power our assistant bot, which helps security teams with situational guidance. The bot uses context from the most recent events to offer real-time advice, improving the decision-making process during critical moments.
 
 ## Challenges we ran into
 1. **Performance Optimization**: Balancing real-time video processing with browser performance and Gemini rate limits
@@ -39,9 +41,9 @@ Our tech stack combines modern tools for a robust, scalable solution:
 
 ## What we learned
 * Advanced video processing techniques in the browser
-* Real-time data handling with WebSocket connections
+* Real-time data handling with WebSocket connections to handle real-time updates effectively
 * AI model optimization for edge cases
-* Complex state management in React applications
+* Complex state management in React applications, especially when dealing with large datasets
 * Integration of multiple third-party services
 * The importance of user experience in security applications
 
