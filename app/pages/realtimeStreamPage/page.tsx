@@ -49,7 +49,8 @@ export default function Page() {
       }
 
       recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-        console.error('Speech recognition error:', event.error)
+        // commenting out as errors from no audio
+        // console.error('Speech recognition error:', event.error)
         setError('Speech recognition error: ' + event.error)
       }
 
@@ -130,7 +131,8 @@ export default function Page() {
           result.events.forEach((event: VideoEvent) => {
             const newTimestamp = {
               timestamp: getElapsedTime(),
-              description: event.description
+              description: event.description,
+              isDangerous: event.isDangerous
             }
             console.log('Adding new timestamp:', newTimestamp)
             setTimestamps(prev => {
