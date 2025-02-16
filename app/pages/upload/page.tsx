@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import VideoPlayer from "@/components/video-player"
 import TimestampList from "@/components/timestamp-list"
 import type { Timestamp } from "@/app/types"
-import { detectEvents } from "./actions"
+import { detectEvents, type VideoEvent } from "./actions"
 import Link from "next/link"
 
 interface SavedVideo {
@@ -139,7 +139,7 @@ export default function UploadPage() {
             const result = await detectEvents(frame)
             console.log('Frame analysis result:', result)
             if (result.events && result.events.length > 0) {
-              result.events.forEach(event => {
+              result.events.forEach((event: VideoEvent) => {
                 const minutes = Math.floor(time / 60)
                 const seconds = Math.floor(time % 60)
                 newTimestamps.push({

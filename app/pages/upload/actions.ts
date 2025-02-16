@@ -8,7 +8,12 @@ if (!API_KEY) {
 }
 const genAI = new GoogleGenerativeAI(API_KEY);
 
-export async function detectEvents(base64Image: string): Promise<{ events: Event[], rawResponse: string }> {
+export interface VideoEvent {
+    timestamp: string;
+    description: string;
+}
+
+export async function detectEvents(base64Image: string): Promise<{ events: VideoEvent[], rawResponse: string }> {
     console.log('Starting frame analysis...');
     try {
         if (!base64Image) {
