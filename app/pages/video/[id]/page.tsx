@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Download } from "lucide-react"
 import VideoPlayer from "@/components/video-player"
 import TimestampList from "@/components/timestamp-list"
+import { Timeline } from "@/app/components/Timeline"
 import type { Timestamp } from "@/app/types"
 
 interface SavedVideo {
@@ -19,6 +20,8 @@ interface SavedVideo {
 
 export default function VideoPage() {
   const [video, setVideo] = useState<SavedVideo | null>(null)
+  const [currentTime, setCurrentTime] = useState(0)
+  const [videoDuration, setVideoDuration] = useState(0)
   const params = useParams()
   const router = useRouter()
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -26,12 +29,42 @@ export default function VideoPage() {
   useEffect(() => {
     const savedVideos: SavedVideo[] = JSON.parse(localStorage.getItem("savedVideos") || "[]")
     const foundVideo = savedVideos.find((v) => v.id === params.id)
+    console.log('Found video:', foundVideo)
     if (foundVideo) {
       setVideo(foundVideo)
     } else {
       router.push("/saved-videos")
     }
   }, [params.id, router])
+
+  // Track video time and duration
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(video.currentTime)
+      console.log('Current time:', video.currentTime)
+    }
+
+    const handleLoadedMetadata = () => {
+      console.log('Video duration:', video.duration)
+      setVideoDuration(video.duration)
+    }
+
+    video.addEventListener('timeupdate', handleTimeUpdate)
+    video.addEventListener('loadedmetadata', handleLoadedMetadata)
+
+    // Initial load if video is already loaded
+    if (video.duration) {
+      handleLoadedMetadata()
+    }
+
+    return () => {
+      video.removeEventListener('timeupdate', handleTimeUpdate)
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata)
+    }
+  }, [])
 
   const handleTimestampClick = (timestamp: string) => {
     if (!videoRef.current) return
@@ -54,6 +87,34 @@ export default function VideoPage() {
         </h1>
         <div className="space-y-4">
           <VideoPlayer url={video.url} timestamps={video.timestamps} ref={videoRef} />
+          
+          {/* Timeline component */}
+          <div className="w-full mt-4 space-y-2 bg-gray-900/50 p-4 rounded-lg backdrop-blur-sm">
+            <h2 className="text-xl font-semibold text-white">Key Moments Timeline</h2>
+            <Timeline
+              events={video.timestamps.map(ts => {
+                console.log('Processing timestamp:', ts);
+                // Handle both MM:SS and raw seconds formats
+                let timeInSeconds;
+                if (typeof ts.timestamp === 'string' && ts.timestamp.includes(':')) {
+                  const [minutes, seconds] = ts.timestamp.split(':').map(Number);
+                  timeInSeconds = minutes * 60 + seconds;
+                } else {
+                  timeInSeconds = Number(ts.timestamp);
+                }
+                console.log('Converted to seconds:', timeInSeconds);
+                return {
+                  startTime: timeInSeconds,
+                  endTime: timeInSeconds + 3, // Each event lasts 3 seconds
+                  type: ts.isDangerous ? 'warning' : 'normal',
+                  label: ts.description
+                };
+              })}
+              totalDuration={videoDuration || 100} // Provide a default duration
+              currentTime={currentTime}
+            />
+          </div>
+
           <div className="flex justify-end mt-4">
             <Button
               onClick={async () => {
