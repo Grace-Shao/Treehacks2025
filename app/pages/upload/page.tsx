@@ -3,18 +3,31 @@
 import type React from "react"
 
 import { useState, useRef } from "react"
-import { Upload } from "lucide-react"
+import { Upload, Save } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+
 import VideoPlayer from "@/components/video-player"
 import TimestampList from "@/components/timestamp-list"
 import type { Timestamp } from "@/app/types"
+import Link from "next/link"
 
-export default function Page() {
+interface SavedVideo {
+  id: string
+  name: string
+  url: string
+  thumbnailUrl: string
+  timestamps: Timestamp[]
+}
+
+export default function UploadPage() {
   const [videoUrl, setVideoUrl] = useState<string>("")
   const [isUploading, setIsUploading] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [timestamps, setTimestamps] = useState<Timestamp[]>([])
   const [uploadProgress, setUploadProgress] = useState(0)
+  const [videoName, setVideoName] = useState("")
   const videoRef = useRef<HTMLVideoElement>(null)
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -25,7 +38,6 @@ export default function Page() {
     setUploadProgress(0)
 
     try {
-      // upload progress mock
       const interval = setInterval(() => {
         setUploadProgress((prev) => {
           if (prev >= 95) {
@@ -36,28 +48,25 @@ export default function Page() {
         })
       }, 100)
 
-      // local url for file 
       const localUrl = URL.createObjectURL(file)
       setVideoUrl(localUrl)
+      setVideoName(file.name)
 
-      // mock processing
       await new Promise((resolve) => setTimeout(resolve, 2000))
 
       setIsUploading(false)
       setUploadProgress(100)
       clearInterval(interval)
 
-      // mock wait
       setIsAnalyzing(true)
       await new Promise((resolve) => setTimeout(resolve, 2000))
 
-      // Mock timestamp data
       const mockTimestamps: Timestamp[] = [
-        { timestamp: "00:05", description: "Intro" },
-        { timestamp: "00:15", description: "Some more details" },
-        { timestamp: "00:30", description: "Second detail" },
-        { timestamp: "00:45", description: "Climax" },
-        { timestamp: "01:00", description: "Resolution" },
+        { timestamp: "00:05", description: "Introduction begins" },
+        { timestamp: "00:15", description: "Main topic presented" },
+        { timestamp: "00:30", description: "First key point discussed" },
+        { timestamp: "00:45", description: "Example provided" },
+        { timestamp: "01:00", description: "Conclusion and summary" },
       ]
       setTimestamps(mockTimestamps)
       setIsAnalyzing(false)
@@ -77,12 +86,25 @@ export default function Page() {
     videoRef.current.play()
   }
 
+  const handleSaveVideo = () => {
+    if (!videoUrl || !videoName) return
+
+    const savedVideos: SavedVideo[] = JSON.parse(localStorage.getItem("savedVideos") || "[]")
+    const newVideo: SavedVideo = {
+      id: Date.now().toString(),
+      name: videoName,
+      url: videoUrl,
+      thumbnailUrl: videoUrl, 
+      timestamps: timestamps,
+    }
+    savedVideos.push(newVideo)
+    localStorage.setItem("savedVideos", JSON.stringify(savedVideos))
+    alert("Video saved successfully!")
+  }
+
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
       <div className="w-full max-w-4xl relative">
-        {/* Small purple hue */}
-        <div className="absolute inset-0 bg-purple-900/5 blur-3xl rounded-full"></div>
-
         <div className="relative z-10 p-8">
           <div className="space-y-8">
             <div className="text-center">
@@ -131,11 +153,31 @@ export default function Page() {
               <div className="space-y-4">
                 <VideoPlayer url={videoUrl} timestamps={timestamps} ref={videoRef} />
                 <TimestampList timestamps={timestamps} onTimestampClick={handleTimestampClick} />
+                <div className="flex items-center space-x-2">
+                  <Input
+                    type="text"
+                    placeholder="Video name"
+                    value={videoName}
+                    onChange={(e) => setVideoName(e.target.value)}
+                    className="bg-zinc-800 border-zinc-700 text-white"
+                  />
+                  <Button onClick={handleSaveVideo} className="bg-white text-black hover:bg-gray-200">
+                    <Save className="w-4 h-4 mr-2" />
+                    Save Video
+                  </Button>
+                </div>
               </div>
             )}
+
+            <div className="text-center">
+              <Link href="/pages/saved-videos" className="text-white hover:text-gray-300">
+                View Saved Videos
+              </Link>
+            </div>
           </div>
         </div>
       </div>
     </div>
   )
 }
+
