@@ -104,7 +104,7 @@ export function EventFeed({ events, videoTimes, onEventHover, onEventClick }: Ev
 
   return (
     <div className="relative flex flex-col space-y-4">
-      <h2 className="text-2xl font-bold tracking-tight">Recent Incidents</h2>
+      <h2 className="text-2xl font-bold text-white tracking-tight drop-shadow-[0_0_10px_rgba(255,255,255,0.7)]">Recent Incidents</h2>
       <AnimatePresence>
         {visibleEvents.map((event) => {
           const { icon: Icon, color, bg } = getIncidentIcon(event.type)

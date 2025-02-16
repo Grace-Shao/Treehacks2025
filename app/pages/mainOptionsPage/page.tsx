@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Video, PlaySquare, FolderOpen } from "lucide-react"
+import { Video, PlaySquare, FolderOpen, Shield } from "lucide-react"
 
 export default function HomePage() {
   return (
@@ -10,6 +10,12 @@ export default function HomePage() {
             Video Options
           </h1>
           <div className="space-y-4">
+          <Link href="/protected" className="block w-full">
+              <button className="w-full bg-white text-black font-semibold py-3 px-6 rounded-lg hover:bg-gray-200 transition-colors duration-300 flex items-center justify-center">
+                <Shield className="mr-2 h-5 w-5" />
+                Security Dashboard
+              </button>
+            </Link>
             <Link href="/pages/upload" className="block w-full">
               <button className="w-full bg-white text-black font-semibold py-3 px-6 rounded-lg hover:bg-gray-200 transition-colors duration-300 flex items-center justify-center">
                 <Video className="mr-2 h-5 w-5" />
