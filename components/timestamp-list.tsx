@@ -13,55 +13,44 @@ interface TimestampListProps {
 export default function TimestampList({ timestamps, onTimestampClick }: TimestampListProps) {
   const [expandedItems, setExpandedItems] = useState<number[]>([])
   const [longDescriptions, setLongDescriptions] = useState<number[]>([])
-  const measureRef = useRef<HTMLDivElement>(null)
+  const textRefs = useRef<(HTMLParagraphElement | null)[]>([])
 
   useEffect(() => {
-    const checkTextWidth = () => {
-      const container = measureRef.current
-      if (!container) return
-
-      const canvas = document.createElement('canvas')
-      const ctx = canvas.getContext('2d')
-      if (!ctx) return
-
-      ctx.font = '14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
-
-      const containerWidth = container.offsetWidth - 32 
-
+    const checkTextOverflow = () => {
       const longItems = timestamps
-        .map((item, index) => {
-          const words = item.description.split(/\s+/)
-          let currentLine = ''
-          let lineCount = 1
+        .map((_, index) => {
+          const textElement = textRefs.current[index]
+          if (!textElement) return { index, hasOverflow: false }
 
-          for (const word of words) {
-            const testLine = currentLine ? `${currentLine} ${word}` : word
-            const metrics = ctx.measureText(testLine)
-            
-            if (metrics.width > containerWidth) {
-              currentLine = word
-              lineCount++
-            } else {
-              currentLine = testLine
-            }
-          }
-
-          return { index, lineCount }
+          // Check if the element has overflow and ellipsis
+          const hasOverflow = (
+            textElement.offsetWidth < textElement.scrollWidth ||
+            textElement.offsetHeight < textElement.scrollHeight
+          )
+          
+          return { index, hasOverflow }
         })
-        .filter(({ lineCount }) => lineCount > 1)
+        .filter(({ hasOverflow }) => hasOverflow)
         .map(({ index }) => index)
 
       setLongDescriptions(longItems)
     }
 
-    const resizeObserver = new ResizeObserver(() => {
-      setTimeout(checkTextWidth, 100)
-    })
-    
-    resizeObserver.observe(measureRef.current!)
-    checkTextWidth()
+    // Check after a short delay to ensure rendering is complete
+    const timeoutId = setTimeout(checkTextOverflow, 100)
 
-    return () => resizeObserver.disconnect()
+    // Recheck on window resize
+    const handleResize = () => {
+      clearTimeout(timeoutId)
+      setTimeout(checkTextOverflow, 100)
+    }
+
+    window.addEventListener('resize', handleResize)
+
+    return () => {
+      clearTimeout(timeoutId)
+      window.removeEventListener('resize', handleResize)
+    }
   }, [timestamps])
 
   const toggleExpand = (index: number, e: React.MouseEvent | React.KeyboardEvent) => {
@@ -72,12 +61,6 @@ export default function TimestampList({ timestamps, onTimestampClick }: Timestam
   }
   return (
     <div className="grid gap-2">
-      <div 
-        ref={measureRef}
-        aria-hidden="true"
-        className="absolute invisible p-4 text-sm whitespace-pre-wrap break-words leading-5"
-        style={{ width: '100%', maxWidth: '600px' }}
-      />
       <div className="flex justify-between items-center mb-2">
         <h2 className="text-xl font-semibold text-white">Key Moments</h2>
         <div className="flex gap-4 text-sm">
@@ -127,7 +110,9 @@ export default function TimestampList({ timestamps, onTimestampClick }: Timestam
                   className={`relative text-sm transition-all duration-200 ${longDescriptions.includes(index) ? 'cursor-pointer' : ''}`}
                   onClick={(e: React.MouseEvent) => longDescriptions.includes(index) && toggleExpand(index, e)}
                 >
-                  <p className={`whitespace-pre-wrap break-words ${expandedItems.includes(index) ? '' : 'line-clamp-1'} ${
+                  <p 
+                    ref={(el) => { textRefs.current[index] = el }}
+                    className={`whitespace-pre-wrap break-words ${expandedItems.includes(index) ? '' : 'line-clamp-1'} ${
                     item.isDangerous ? 'text-red-200/80' : 'text-zinc-400'
                   }`}>
                     {item.description}
