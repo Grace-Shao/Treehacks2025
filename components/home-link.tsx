@@ -12,7 +12,7 @@ export default function HomeLink() {
     e.preventDefault()
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    router.push(user ? '/pages/mainOptionsPage' : '/')
+    router.push(user ? '/protected' : '/')
   }
 
   return (
