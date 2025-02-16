@@ -97,23 +97,7 @@ export default function StatisticsPage() {
 
     console.log('Saved Videos:', savedVideos)
 
-    // Get danger type from description
-    const getDangerType = (description: string) => {
-      const dangerTypes = {
-        'posture': ['posture', 'leaning', 'balance'],
-        'proximity': ['close', 'near', 'proximity', 'distance'],
-        'movement': ['sudden', 'rapid', 'quick', 'fast'],
-        'equipment': ['tool', 'machine', 'equipment', 'device'],
-        'environmental': ['slip', 'trip', 'fall', 'spill']
-      }
 
-      for (const [type, keywords] of Object.entries(dangerTypes)) {
-        if (keywords.some(keyword => description.toLowerCase().includes(keyword))) {
-          return type
-        }
-      }
-      return 'other'
-    }
 
     // Filter dangerous moments using the isDangerous flag
     const dangerousMoments = moments.filter(moment => moment.isDangerous)
@@ -124,12 +108,9 @@ export default function StatisticsPage() {
       return acc
     }, {})
 
-    // Count danger types
-    const dangerTypes = dangerousMoments.reduce((acc: { [key: string]: number }, moment) => {
-      const type = getDangerType(moment.description)
-      acc[type] = (acc[type] || 0) + 1
-      return acc
-    }, {})
+    // Calculate dangerous vs non-dangerous ratio
+    const dangerousCount = dangerousMoments.length
+    const nonDangerousCount = moments.length - dangerousCount
 
     // Create time-based trend data (by 15-minute intervals)
     const trendData = dangerousMoments.reduce((acc: { [key: string]: number }, moment) => {
@@ -153,18 +134,14 @@ export default function StatisticsPage() {
         ],
       },
       dangerTypeDistribution: {
-        labels: Object.keys(dangerTypes),
+        labels: ['Dangerous Moments', 'Non-Dangerous Moments'],
         datasets: [
           {
-            label: 'Types of Dangerous Moments',
-            data: Object.values(dangerTypes),
+            label: 'Safety Incident Distribution',
+            data: [dangerousCount, nonDangerousCount],
             backgroundColor: [
-              'rgba(255, 99, 132, 0.6)',  // Red for posture
-              'rgba(54, 162, 235, 0.6)',   // Blue for proximity
-              'rgba(255, 206, 86, 0.6)',   // Yellow for movement
-              'rgba(75, 192, 192, 0.6)',   // Teal for equipment
-              'rgba(153, 102, 255, 0.6)',  // Purple for environmental
-              'rgba(255, 159, 64, 0.6)',   // Orange for other
+              'rgba(255, 99, 132, 0.6)',  // Red for dangerous
+              'rgba(54, 162, 235, 0.6)',   // Blue for non-dangerous
             ],
             borderColor: [
               'rgba(255, 99, 132, 1)',
@@ -275,7 +252,7 @@ export default function StatisticsPage() {
             )}
           </div>
           <div className="p-6 bg-card rounded-lg border shadow-sm">
-            <h2 className="text-xl font-semibold mb-4">Types of Dangerous Moments</h2>
+            <h2 className="text-xl font-semibold mb-4">Dangerous vs Non-Dangerous Moments</h2>
             {chartData.dangerTypeDistribution && (
               <Pie
                 data={chartData.dangerTypeDistribution}
@@ -287,7 +264,7 @@ export default function StatisticsPage() {
                     },
                     title: {
                       display: true,
-                      text: 'Distribution of Danger Types'
+                      text: 'Safety Incident Distribution'
                     }
                   },
                 }}
