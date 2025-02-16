@@ -2,7 +2,11 @@
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
+const API_KEY = process.env.GOOGLE_API_KEY;
+if (!API_KEY) {
+    throw new Error('GOOGLE_API_KEY environment variable is not set');
+}
+const genAI = new GoogleGenerativeAI(API_KEY);
 
 // Rate limiting variables
 let lastCallTime = 0;
@@ -11,7 +15,13 @@ let consecutiveErrors = 0;
 const MAX_CONSECUTIVE_ERRORS = 5;
 let backoffTime = MIN_CALL_INTERVAL;
 
-export async function detectObjects(base64Image: string) {
+export type Event = {
+    timestamp: number;
+    description: string;
+};
+
+export async function detectEvents(base64Image: string): Promise<{ events: Event[], rawResponse: string }> {
+    console.log('Starting object detection...');
     try {
         const now = Date.now();
         const timeSinceLastCall = now - lastCallTime;
@@ -33,7 +43,13 @@ export async function detectObjects(base64Image: string) {
             throw new Error("Empty image data");
         }
 
+        if (!process.env.GOOGLE_API_KEY) {
+            console.error('GOOGLE_API_KEY is not set in environment variables');
+            throw new Error('API key not configured');
+        }
+
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        console.log('Initialized Gemini model');
 
         const imagePart = {
             inlineData: {
@@ -46,21 +62,19 @@ export async function detectObjects(base64Image: string) {
         lastCallTime = now;
 
         console.log('Sending image to API...', { imageSize: base64Data.length });
-        const prompt = `You are a precise object detection system focused on water bottles. Analyze the image and return ONLY a JSON object in this exact format, with no additional text:
+        const prompt = `Please analyze this frame and describe any significant events or actions occurring. Return a JSON object in this exact format:
 
 {
-    "objects": [
+    "events": [
         {
-            "label": "water bottle",
-            "confidence": 0.95,
-            "bbox": [0.1, 0.2, 0.3, 0.4]
+            "timestamp": "mm:ss",
+            "description": "Brief description of what's happening in this frame"
         }
     ]
 }
 
-The bbox array MUST contain exactly 4 numbers between 0 and 1, representing [left, top, right, bottom] coordinates.
-If no water bottles are found, return {"objects": []}.
-Include bottles only if confidence > 0.7.
+If nothing significant is happening, return {"events": []}.
+Be concise but descriptive.
 DO NOT include any text outside the JSON.`;
 
         try {
@@ -76,12 +90,21 @@ DO NOT include any text outside the JSON.`;
             consecutiveErrors = 0;
             backoffTime = MIN_CALL_INTERVAL;
 
-            // Try to extract JSON from the response
+            // Try to extract JSON from the response, handling potential code blocks
             let jsonStr = text;
-            const jsonMatch = text.match(/\{[^]*\}/);  
-            if (jsonMatch) {
-                jsonStr = jsonMatch[0];
-                console.log('Extracted JSON string:', jsonStr);
+            
+            // First try to extract content from code blocks if present
+            const codeBlockMatch = text.match(/```(?:json)?\s*({[\s\S]*?})\s*```/);
+            if (codeBlockMatch) {
+                jsonStr = codeBlockMatch[1];
+                console.log('Extracted JSON from code block:', jsonStr);
+            } else {
+                // If no code block, try to find raw JSON
+                const jsonMatch = text.match(/\{[^]*\}/);  
+                if (jsonMatch) {
+                    jsonStr = jsonMatch[0];
+                    console.log('Extracted raw JSON:', jsonStr);
+                }
             }
 
             try {
@@ -96,30 +119,46 @@ DO NOT include any text outside the JSON.`;
                     return { objects: [] };
                 }
 
+                // Validate and normalize objects
                 const validObjects = parsed.objects.filter(obj => {
-                    const isValid = (
-                        obj.label && 
-                        typeof obj.confidence === 'number' && 
-                        Array.isArray(obj.bbox) && 
-                        obj.bbox.length === 4 &&
-                        obj.bbox.every(coord => typeof coord === 'number' && coord >= 0 && coord <= 1)
-                    );
+                    try {
+                        // Basic structure check
+                        if (!obj.label || typeof obj.confidence !== 'number' || !Array.isArray(obj.bbox)) {
+                            console.error('Invalid object structure:', obj);
+                            return false;
+                        }
 
-                    if (!isValid) {
-                        console.error('Invalid object structure:', obj);
-                        console.error('Validation details:', {
-                            hasLabel: !!obj.label,
-                            confidenceType: typeof obj.confidence,
-                            bboxIsArray: Array.isArray(obj.bbox),
-                            bboxLength: obj.bbox?.length,
-                            bboxValid: obj.bbox?.every(coord => typeof coord === 'number' && coord >= 0 && coord <= 1)
+                        // Validate bbox
+                        if (obj.bbox.length !== 4) {
+                            console.error('Invalid bbox length:', obj.bbox);
+                            return false;
+                        }
+
+                        // Convert any string numbers to actual numbers
+                        obj.bbox = obj.bbox.map(coord => {
+                            const num = typeof coord === 'string' ? parseFloat(coord) : coord;
+                            return typeof num === 'number' && !isNaN(num) ? num : null;
                         });
+
+                        // Validate all coordinates are valid numbers between 0 and 1
+                        const validCoords = obj.bbox.every(coord => 
+                            coord !== null && coord >= 0 && coord <= 1
+                        );
+
+                        if (!validCoords) {
+                            console.error('Invalid bbox coordinates:', obj.bbox);
+                            return false;
+                        }
+
+                        return true;
+                    } catch (error) {
+                        console.error('Error validating object:', error);
+                        return false;
                     }
-                    return isValid;
                 });
 
                 console.log('Valid objects found:', validObjects);
-                return { objects: validObjects };
+                return { objects: validObjects, rawResponse: text };
             } catch (parseError) {
                 console.error('JSON parsing error:', parseError);
                 console.error('Failed to parse text:', jsonStr);
