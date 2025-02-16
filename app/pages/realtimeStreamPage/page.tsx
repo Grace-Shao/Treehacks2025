@@ -17,6 +17,7 @@ export default function Page() {
   const [error, setError] = useState<string | null>(null)
   const [transcript, setTranscript] = useState('')
   const [isTranscribing, setIsTranscribing] = useState(false)
+  const startTimeRef = useRef<Date | null>(null)
 
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -35,7 +36,7 @@ export default function Page() {
       recognition.continuous = true
       recognition.interimResults = true
 
-      recognition.onresult = (event) => {
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
         let finalTranscript = ''
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
@@ -47,7 +48,7 @@ export default function Page() {
         }
       }
 
-      recognition.onerror = (event) => {
+      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
         console.error('Speech recognition error:', event.error)
         setError('Speech recognition error: ' + event.error)
       }
@@ -100,6 +101,14 @@ export default function Page() {
     return canvas.toDataURL('image/jpeg', 0.8)
   }
 
+  const getElapsedTime = () => {
+    if (!startTimeRef.current) return '00:00'
+    const elapsed = Math.floor((new Date().getTime() - startTimeRef.current.getTime()) / 1000)
+    const minutes = Math.floor(elapsed / 60)
+    const seconds = elapsed % 60
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+  }
+
   const analyzeFrame = async () => {
     const currentTranscript = transcript.trim()
     console.log('Analyzing frame...')
@@ -118,19 +127,9 @@ export default function Page() {
 
         if (result.events && result.events.length > 0) {
           console.log('Events detected:', result.events)
-          const currentTime = new Date()
-          // Format time in PST
-          const timeFormatter = new Intl.DateTimeFormat('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: true,
-            timeZone: 'America/Los_Angeles'
-          })
-          
           result.events.forEach((event: VideoEvent) => {
             const newTimestamp = {
-              timestamp: timeFormatter.format(currentTime),
+              timestamp: getElapsedTime(),
               description: event.description
             }
             console.log('Adding new timestamp:', newTimestamp)
@@ -154,6 +153,9 @@ export default function Page() {
   }
 
   const startRecording = () => {
+    // Set start time for elapsed time tracking
+    startTimeRef.current = new Date()
+    
     // Start speech recognition
     if (recognitionRef.current) {
       setTranscript('')
@@ -183,6 +185,9 @@ export default function Page() {
   }
 
   const stopRecording = () => {
+    // Reset start time
+    startTimeRef.current = null
+    
     // Stop speech recognition
     if (recognitionRef.current) {
       recognitionRef.current.stop()
@@ -283,7 +288,28 @@ export default function Page() {
               <div className="mt-4 space-y-2">
                 <h2 className="text-xl font-semibold text-white">Detected Events</h2>
                 {timestamps.length > 0 ? (
-                  <TimestampList timestamps={timestamps} onTimestampClick={() => {}} />
+                  <div className="space-y-2">
+                    {timestamps.map((event, index) => (
+                      <div 
+                        key={index}
+                        className={`p-3 rounded-lg ${event.isDangerous 
+                          ? 'bg-red-900/50 border border-red-500 animate-pulse' 
+                          : 'bg-zinc-800/50'}`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="flex items-center gap-2">
+                            {event.isDangerous && (
+                              <div className="w-2 h-2 rounded-full bg-red-500" />
+                            )}
+                            <span className="text-zinc-400 font-mono">{event.timestamp}</span>
+                          </div>
+                          <p className={`${event.isDangerous ? 'text-red-200' : 'text-zinc-200'}`}>
+                            {event.description}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
                   <p className="text-zinc-400 text-sm">
                     {isRecording ? 'Waiting for events...' : 'Start analysis to detect events'}

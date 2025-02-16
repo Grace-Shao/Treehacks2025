@@ -11,6 +11,7 @@ const genAI = new GoogleGenerativeAI(API_KEY);
 export interface VideoEvent {
     timestamp: string;
     description: string;
+    isDangerous: boolean;
 }
 
 export async function detectEvents(base64Image: string, transcript: string = ''): Promise<{ events: VideoEvent[], rawResponse: string }> {
@@ -36,7 +37,32 @@ export async function detectEvents(base64Image: string, transcript: string = '')
         };
 
         console.log('Sending image to API...', { imageSize: base64Data.length });
-        const prompt = `Please analyze this frame and describe any significant events or actions occurring.
+        const prompt = `Analyze this frame and determine if any of these specific dangerous situations are occurring:
+
+1. Medical Emergencies:
+- Person unconscious or lying motionless
+- Person clutching chest/showing signs of heart problems
+- Seizures or convulsions
+- Difficulty breathing or choking
+
+2. Falls and Injuries:
+- Person falling or about to fall
+- Person on the ground after a fall
+- Signs of injury or bleeding
+- Limping or showing signs of physical trauma
+
+3. Distress Signals:
+- Person calling for help or showing distress
+- Panic attacks or severe anxiety symptoms
+- Signs of fainting or dizziness
+
+4. Violence or Threats:
+- Physical altercations
+- Threatening behavior
+- Weapons visible
+
+Only report if any of these specific dangerous situations are detected. Ignore normal, non-dangerous activities.
+
 ${transcript ? `Consider this audio transcript from the scene: "${transcript}"
 ` : ''}
 Return a JSON object in this exact format:
@@ -45,13 +71,15 @@ Return a JSON object in this exact format:
     "events": [
         {
             "timestamp": "mm:ss",
-            "description": "Brief description of what's happening in this frame"
+            "description": "Brief description of what's happening in this frame",
+            "isDangerous": true/false // Set to true if the event involves a fall, injury, accident, or concerning behavior
         }
     ]
 }
 
-If nothing significant is happening, return {"events": []}.
-Be concise but descriptive.
+If none of these dangerous situations are detected, return {"events": []}.
+Be specific about which dangerous situation was detected and describe the exact concerning behavior observed.
+Set isDangerous to true ONLY if one of the listed dangerous situations is detected.
 DO NOT include any text outside the JSON.`;
 
         try {
