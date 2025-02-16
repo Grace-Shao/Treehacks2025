@@ -119,12 +119,18 @@ export default function Page() {
         if (result.events && result.events.length > 0) {
           console.log('Events detected:', result.events)
           const currentTime = new Date()
-          const minutes = currentTime.getMinutes()
-          const seconds = currentTime.getSeconds()
+          // Format time in PST
+          const timeFormatter = new Intl.DateTimeFormat('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true,
+            timeZone: 'America/Los_Angeles'
+          })
           
           result.events.forEach((event: VideoEvent) => {
             const newTimestamp = {
-              timestamp: `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`,
+              timestamp: timeFormatter.format(currentTime),
               description: event.description
             }
             console.log('Adding new timestamp:', newTimestamp)
