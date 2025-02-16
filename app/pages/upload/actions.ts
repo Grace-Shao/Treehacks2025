@@ -9,6 +9,7 @@ if (!API_KEY) {
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 export interface VideoEvent {
+    isDangerous: boolean;
     timestamp: string;
     description: string;
 }
@@ -36,20 +37,43 @@ export async function detectEvents(base64Image: string): Promise<{ events: Video
         };
 
         console.log('Sending image to API...', { imageSize: base64Data.length });
-        const prompt = `Please analyze this frame and describe any significant events or actions occurring. Return a JSON object in this exact format:
+        const prompt = `Analyze this frame and determine if any of these specific dangerous situations are occurring:
+
+1. Medical Emergencies:
+- Person unconscious or lying motionless
+- Person clutching chest/showing signs of heart problems
+- Seizures or convulsions
+- Difficulty breathing or choking
+
+2. Falls and Injuries:
+- Person falling or about to fall
+- Person on the ground after a fall
+- Signs of injury or bleeding
+- Limping or showing signs of physical trauma
+
+3. Distress Signals:
+- Person calling for help or showing distress
+- Panic attacks or severe anxiety symptoms
+- Signs of fainting or dizziness
+- Headache or unease
+- Signs of unconsciousness
+
+4. Violence or Threats:
+- Physical altercations
+- Threatening behavior
+- Weapons visible
+
+Return a JSON object in this exact format:
 
 {
     "events": [
         {
             "timestamp": "mm:ss",
-            "description": "Brief description of what's happening in this frame"
+            "description": "Brief description of what's happening in this frame",
+            "isDangerous": true/false // Set to true if the event involves a fall, injury, unease, pain, accident, or concerning behavior
         }
     ]
-}
-
-If nothing significant is happening, return {"events": []}.
-Be concise but descriptive.
-DO NOT include any text outside the JSON.`;
+}`;
 
         try {
             const result = await model.generateContent([

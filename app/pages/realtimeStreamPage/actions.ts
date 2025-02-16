@@ -55,6 +55,8 @@ export async function detectEvents(base64Image: string, transcript: string = '')
 - Person calling for help or showing distress
 - Panic attacks or severe anxiety symptoms
 - Signs of fainting or dizziness
+- Headache or unease
+- Signs of unconsciousness
 
 4. Violence or Threats:
 - Physical altercations
@@ -70,7 +72,7 @@ Return a JSON object in this exact format:
         {
             "timestamp": "mm:ss",
             "description": "Brief description of what's happening in this frame",
-            "isDangerous": true/false // Set to true if the event involves a fall, injury, accident, or concerning behavior
+            "isDangerous": true/false // Set to true if the event involves a fall, injury, unease, pain, accident, or concerning behavior
         }
     ]
 }`;

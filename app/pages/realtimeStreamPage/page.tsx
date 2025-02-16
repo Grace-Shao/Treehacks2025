@@ -538,10 +538,10 @@ export default function Page() {
       recognitionRef.current.start()
     }
 
-    // Start video recording using MediaRecorder
+    // Start video recording using MediaRecorder with MP4 container
     recordedChunksRef.current = []
     const mediaRecorder = new MediaRecorder(mediaStreamRef.current, {
-      mimeType: "video/webm"
+      mimeType: "video/mp4"
     })
 
     mediaRecorder.ondataavailable = (event) => {
@@ -551,7 +551,7 @@ export default function Page() {
     }
 
     mediaRecorder.onstop = () => {
-      const blob = new Blob(recordedChunksRef.current, { type: "video/webm" })
+      const blob = new Blob(recordedChunksRef.current, { type: "video/mp4" })
       const url = URL.createObjectURL(blob)
       setRecordedVideoUrl(url)
       setVideoName("stream.mp4")
@@ -565,7 +565,7 @@ export default function Page() {
     }
 
     mediaRecorder.onstop = () => {
-      const blob = new Blob(recordedChunksRef.current, { type: "video/webm" })
+      const blob = new Blob(recordedChunksRef.current, { type: "video/mp4" })
       const url = URL.createObjectURL(blob)
       setRecordedVideoUrl(url)
       setVideoName("stream.mp4")
@@ -664,16 +664,21 @@ export default function Page() {
 
     const handleLoadedMetadata = () => {
       setVideoDuration(video.duration || 60)
+      // Reset playback position to start
+      video.currentTime = 0
     }
 
     video.addEventListener('timeupdate', handleTimeUpdate)
     video.addEventListener('loadedmetadata', handleLoadedMetadata)
 
+    // Reset playback position when video source changes
+    video.currentTime = 0
+
     return () => {
       video.removeEventListener('timeupdate', handleTimeUpdate)
       video.removeEventListener('loadedmetadata', handleLoadedMetadata)
     }
-  }, [])
+  }, [recordedVideoUrl])
 
   useEffect(() => {
     initSpeechRecognition()
