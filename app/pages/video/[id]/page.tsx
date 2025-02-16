@@ -55,7 +55,7 @@ export default function VideoPage() {
           <TimestampList timestamps={video.timestamps} onTimestampClick={handleTimestampClick} />
         </div>
         <div className="mt-8 text-center">
-          <Link href="/saved-videos" className="text-purple-400 hover:text-purple-300">
+          <Link href="/pages/saved-videos" className="text-purple-400 hover:text-purple-300">
             Back to Saved Videos
           </Link>
         </div>

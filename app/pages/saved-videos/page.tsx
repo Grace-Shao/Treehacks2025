@@ -73,7 +73,7 @@ export default function SavedVideosPage() {
                   <h2 className="text-lg font-semibold mb-2 tracking-wide">{video.name}</h2>
                   <div className="flex justify-between items-center">
                     <Link
-                      href={`/video/${video.id}`}
+                      href={`/pages/video/${video.id}`}
                       className="text-white hover:text-gray-300 text-sm font-medium tracking-wider uppercase transition-colors duration-200"
                     >
                       View Analysis
@@ -109,4 +109,3 @@ export default function SavedVideosPage() {
     </div>
   )
 }
-
