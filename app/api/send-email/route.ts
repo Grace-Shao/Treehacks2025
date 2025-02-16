@@ -13,19 +13,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Email service not configured' }, { status: 500 })
     }
 
-    // Commented out dynamic user email code
-    /*
-    console.log('Getting Supabase client...')
-    const supabase = await createClient()
-    console.log('Getting user...')
-    const { data: { user } } = await supabase.auth.getUser()
-    console.log('User:', user?.email ? 'Found user with email' : 'No user or email')
-
-    if (!user?.email) {
-      return NextResponse.json({ error: 'User not authenticated or no email found' }, { status: 401 })
-    }
-    */
-
     const { title, description } = await request.json()
     console.log('Sending email to: graceshao203@gmail.com')
 
