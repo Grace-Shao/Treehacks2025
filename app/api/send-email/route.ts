@@ -1,6 +1,6 @@
 import { Resend } from 'resend'
 import { NextResponse } from 'next/server'
-// import { createClient } from '@/utils/supabase/server' // Commented out dynamic user email
+// import { createClient } from '@/utils/supabase/server' 
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
