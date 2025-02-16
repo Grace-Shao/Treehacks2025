@@ -19,4 +19,5 @@ export interface Event {
   type: string
   timestamp: Date
   thumbnail?: string
+  description?: string
 }
