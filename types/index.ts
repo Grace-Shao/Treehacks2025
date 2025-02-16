@@ -21,3 +21,21 @@ export interface Event {
   thumbnail?: string
   description?: string
 }
+
+export interface BoundingBoxData {
+  video_info: {
+    name: string
+    width: number
+    height: number
+    fps: number
+    total_frames: number
+    frame_interval: number
+  }
+  frames: {
+    [frameNumber: string]: {
+      boxes: [number, number, number, number][]
+      confidences: number[]
+      is_keyframe: boolean
+    }
+  }
+}
